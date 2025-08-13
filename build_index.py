@@ -1,31 +1,40 @@
 import os
 import argparse
 import pickle
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
 from tqdm import tqdm
 import numpy as np
+import re
+from app.utils import _VECT_PATH
 
 from bs4 import BeautifulSoup
 import requests
 
-from app.utils import get_embedding
 
 def fetch_url(url, timeout=15):
     r = requests.get(url, timeout=timeout)
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "html.parser")
 
-    for s in soup(["script", "style", "noscript"]):
-        s.extract()
-    return soup.get_text(" ", strip=True)
+    for s in soup(["script", "style", "noscript", 
+                  "meta", "link", "svg", "iframe"]):
+        s.decompose()
+    
 
-def chunk_text(text, chunk_size_words=200):
+    text = soup.get_text(" ", strip=True)
+    text = re.sub(r'\\[u,x][a-f0-9]+', '', text)
+
+    return text
+
+def chunk_text(text, chunk_size_words=300):
     words = text.split()
     chunks = []
     for i in range(0, len(words), chunk_size_words):
         chunks.append(" ".join(words[i:i+chunk_size_words]))
-    return chunks
+    return chunks[:-1]
 
-def build_index(urls_file, out_dir, chunk_size_words=200):
+def build_index(urls_file, out_dir, chunk_size_words=300):
     os.makedirs(out_dir, exist_ok=True)
     texts = []
     metas = []
@@ -46,13 +55,6 @@ def build_index(urls_file, out_dir, chunk_size_words=200):
 
     if not texts:
         raise RuntimeError("No texts fetched")
-
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.decomposition import TruncatedSVD
-
-    _CACHE_DIR = os.path.join(os.path.dirname(__file__), "..", ".cache")
-    os.makedirs(_CACHE_DIR, exist_ok=True)
-    _VECT_PATH = os.path.join(_CACHE_DIR, "vect_svd.pkl")
 
     vect = TfidfVectorizer(max_features=20000)
     X = vect.fit_transform(texts)

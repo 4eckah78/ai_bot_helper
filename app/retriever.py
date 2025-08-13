@@ -33,5 +33,7 @@ class Retriever:
         for score, idx in zip(D[0], I[0]):
             if idx < 0:
                 continue
-            results.append({"score": float(score), "text": self.texts[idx], "url": self.metas[idx]})
+            results.append(
+                {"score": float(score), "text": self.texts[idx], "url": self.metas[idx]}
+            )
         return results

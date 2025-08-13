@@ -22,6 +22,7 @@ def _train_vectorizer_and_svd(corpus, n_components=256):
 def _load_vectorizer_and_svd():
     if os.path.exists(_VECT_PATH):
         import pickle
+
         with open(_VECT_PATH, "rb") as f:
             d = pickle.load(f)
         return d["vect"], d["svd"]
@@ -31,9 +32,12 @@ def _load_vectorizer_and_svd():
 def get_embedding(text):
     vect, svd = _load_vectorizer_and_svd()
     if vect is None or svd is None:
-        vect, svd = _train_vectorizer_and_svd([text], n_components=min(256, max(32, len(text))))
+        vect, svd = _train_vectorizer_and_svd(
+            [text], n_components=min(256, max(32, len(text)))
+        )
     X = vect.transform([text])
     vec = svd.transform(X)
     vec = np.asarray(vec).reshape(-1)
-    print("TFIDF features:", X.shape[1], " SVD dim:", svd.n_components)
     return vec.astype("float32")
+
+
