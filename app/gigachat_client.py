@@ -11,7 +11,8 @@ class GigachatClient:
         messages = [
             {
                 "role": "system",
-                "content": "Ты помощник. Помогаешь отвечать клиентам. Отвечай строго по контексту",
+                "content": "Ты помощник, отвечаешь клиентам, отвечай строго по контексту, цитируй номера источников."
+                "",
             },
             {"role": "user", "content": prompt},
         ]
@@ -25,4 +26,3 @@ class GigachatClient:
             }
         )
         return response.choices[0].message.content
-

@@ -1,15 +1,16 @@
-import os
 import argparse
+import os
 import pickle
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-from tqdm import tqdm
-import numpy as np
 import re
-from app.utils import _VECT_PATH
 
-from bs4 import BeautifulSoup
+import numpy as np
 import requests
+from bs4 import BeautifulSoup
+from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import TfidfVectorizer
+from tqdm import tqdm
+
+from app.utils import _VECT_PATH
 
 
 def fetch_url(url, timeout=15):
@@ -17,22 +18,23 @@ def fetch_url(url, timeout=15):
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "html.parser")
 
-    for s in soup(["script", "style", "noscript", 
-                  "meta", "link", "svg", "iframe"]):
+    for s in soup(["script", "style", "noscript", "meta", "link", "svg", "iframe"]):
         s.decompose()
-    
 
     text = soup.get_text(" ", strip=True)
-    text = re.sub(r'\\[u,x][a-f0-9]+', '', text)
+    text = re.sub(r"\{.*?\}|\[.*?\]", "", text)
+    text = re.sub(r"\\[u,x][a-f0-9]+", "", text)
 
     return text
+
 
 def chunk_text(text, chunk_size_words=300):
     words = text.split()
     chunks = []
     for i in range(0, len(words), chunk_size_words):
-        chunks.append(" ".join(words[i:i+chunk_size_words]))
+        chunks.append(" ".join(words[i : i + chunk_size_words]))
     return chunks[:-1]
+
 
 def build_index(urls_file, out_dir, chunk_size_words=300):
     os.makedirs(out_dir, exist_ok=True)
@@ -74,6 +76,7 @@ def build_index(urls_file, out_dir, chunk_size_words=300):
     embeddings = embeddings / norms
 
     import faiss
+
     dim = embeddings.shape[1]
     index = faiss.IndexFlatIP(dim)
     index.add(embeddings)
@@ -86,11 +89,10 @@ def build_index(urls_file, out_dir, chunk_size_words=300):
 
 
 if __name__ == "__main__":
-    # p = argparse.ArgumentParser()
-    # p.add_argument("--urls-file", required=True)
-    # p.add_argument("--out-dir", required=True)
-    # p.add_argument("--chunk-size", type=int, default=200)
-    # args = p.parse_args()
+    p = argparse.ArgumentParser()
+    p.add_argument("--urls-file", required=True)
+    p.add_argument("--out-dir", required=True)
+    p.add_argument("--chunk-size", type=int, default=200)
+    args = p.parse_args()
 
-    # build_index(args.urls_file, args.out_dir, args.chunk_size)
-    build_index("urls.txt", "indexdata", 200)
+    build_index(args.urls_file, args.out_dir, args.chunk_size)

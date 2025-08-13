@@ -1,9 +1,11 @@
 import argparse
-import requests
 import os
 import sys
 
+import requests
+
 DEFAULT_URL = os.getenv("EORA_API_URL", "http://127.0.0.1:8000/answer")
+
 
 def ask(question: str, top_k: int, api_url: str):
     payload = {"question": question, "top_k": top_k}
@@ -21,9 +23,10 @@ def ask(question: str, top_k: int, api_url: str):
     print("\n--- Ответ ---\n")
     print(data["answer"])
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CLI для API EORA")
-    parser.add_argument("question", help="Ваш вопрос", nargs="+") 
+    parser.add_argument("question", help="Ваш вопрос", nargs="+")
     parser.add_argument("--top_k", type=int, default=3, help="Количество результатов")
     parser.add_argument("--api_url", default=DEFAULT_URL, help="URL API")
 

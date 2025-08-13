@@ -1,8 +1,10 @@
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-import numpy as np
-import pickle
 import os
+import pickle
+import re
+
+import numpy as np
+from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 _CACHE_DIR = os.path.join(os.path.dirname(__file__), "..", ".cache")
 os.makedirs(_CACHE_DIR, exist_ok=True)
@@ -41,3 +43,11 @@ def get_embedding(text):
     return vec.astype("float32")
 
 
+def replace_refs(text, urls):
+    def repl(match):
+        idx = int(match.group(1)) - 1
+        if 0 <= idx < len(urls):
+            return f"[{match.group(1)}]({urls[idx]})"
+        return match.group(0)
+
+    return re.sub(r"\[(\d+)\]", repl, text)

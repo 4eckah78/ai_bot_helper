@@ -1,7 +1,9 @@
-import faiss
-import pickle
-import numpy as np
 import os
+import pickle
+
+import faiss
+import numpy as np
+
 
 class Retriever:
     def __init__(self, index_dir):

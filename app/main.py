@@ -1,11 +1,11 @@
 import os
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from .retriever import Retriever
 from .gigachat_client import GigachatClient
-from .utils import get_embedding
-
+from .retriever import Retriever
+from .utils import get_embedding, replace_refs
 
 INDEX_DIR = os.getenv("INDEX_DIR", "indexdata")
 GIGACHAT_KEY = os.getenv("GIGACHAT_AUTH_KEY")
@@ -36,25 +36,31 @@ def answer(q: Query):
     qvec = get_embedding(q.question)
     hits = retriever.query(qvec, top_k=q.top_k)
 
-    url_to_idx = {}
+    idx = 0
+    urls = []
     parts = []
     for h in hits:
         url = h["url"]
-        if url not in url_to_idx:
-            url_to_idx[url] = len(url_to_idx) + 1
-        idx = url_to_idx[url]
+        if url not in urls:
+            idx += 1
+        urls.append(url)
 
         snippet = h["text"]
-        parts.append(f"{snippet} [[{idx}]({url})]")
+        parts.append(f"[{idx}] {snippet} ")
 
     context = "\n\n".join(parts)
 
     prompt = (
-        f"Используй только следующий контекст:\n\n{context}\n\nВопрос: {q.question}\n\n"
-        f"Только после (не перед) каждого факта ставь его номер и ссылку вот так - [[n](ссылка)]"
+        f"Используй ТОЛЬКО предоставленный контекст. Контекст (каждый фрагмент помечен [n]):\n\n"
+        f"{context}\n\n"
+        f"Вопрос: {q.question}\n\n"
+        f"Отвечай кратко и включай в ответ метки [n] там, где ты использовал конкретный фрагмент."
     )
-    print(prompt)
 
     resp_text = gclient.generate(prompt)
 
+    resp_text = replace_refs(resp_text, urls)
+
     return Answer(answer=resp_text)
+
+
